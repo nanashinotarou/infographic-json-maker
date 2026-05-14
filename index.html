@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>あなたの特性マップをつくろう</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #FF6B9D;
+    --yellow: #FFD166;
+    --mint: #06D6A0;
+    --sky: #4ECDC4;
+    --purple: #A855F7;
+    --coral: #FF8B64;
+    --bg: #FFF9F0;
+    --text: #2D2D2D;
+    --radius: 20px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .hero {
+    background: linear-gradient(135deg, #FFE0EC 0%, #FFF3CD 50%, #D4F5F0 100%);
+    padding: 56px 24px 36px;
+    text-align: center;
+  }
+  .hero-emoji { font-size: 3.5rem; display: block; margin-bottom: 10px; animation: bounce 2s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .hero h1 { font-size: clamp(1.5rem, 5vw, 2.2rem); font-weight: 900; line-height: 1.3; margin-bottom: 10px; }
+  .hero h1 em { font-style: normal; color: var(--pink); position: relative; }
+  .hero h1 em::after { content:''; position:absolute; bottom:2px; left:0; width:100%; height:5px; background:var(--yellow); z-index:-1; border-radius:3px; }
+  .hero-sub { font-size: 0.9rem; color: #666; line-height: 1.8; margin-bottom: 16px; }
+  .hero-badge { display:inline-flex; align-items:center; gap:6px; background:white; border:2.5px solid var(--pink); border-radius:999px; padding:6px 18px; font-size:0.82rem; font-weight:700; color:var(--pink); }
+  .container { max-width: 660px; margin: 0 auto; padding: 32px 20px 80px; }
+  .progress-label { text-align:right; font-size:0.78rem; color:#999; margin-bottom:6px; font-weight:700; }
+  .progress-wrap { background:white; border-radius:999px; height:10px; margin-bottom:28px; overflow:hidden; box-shadow:inset 0 2px 6px rgba(0,0,0,0.08); }
+  .progress-bar { height:100%; background:linear-gradient(90deg, var(--pink), var(--coral)); border-radius:999px; transition:width 0.5s cubic-bezier(0.4,0,0.2,1); width:0%; }
+  .step { background:white; border-radius:var(--radius); padding:22px 20px; margin-bottom:16px; box-shadow:0 4px 16px rgba(0,0,0,0.05); border:2.5px solid #f0f0f0; transition:border-color 0.3s, opacity 0.3s; position:relative; overflow:hidden; }
+  .step.active { border-color:var(--pink); box-shadow:0 6px 24px rgba(255,107,157,0.15); }
+  .step.done { border-color:var(--mint); opacity:0.7; }
+  .step.locked { opacity:0.3; pointer-events:none; user-select:none; }
+  .step-bar { position:absolute; top:0; left:0; width:5px; height:100%; border-radius:4px 0 0 4px; }
+  .s1 .step-bar { background:var(--pink); }
+  .s2 .step-bar { background:var(--yellow); }
+  .s3 .step-bar { background:var(--mint); }
+  .s4 .step-bar { background:var(--sky); }
+  .s5 .step-bar { background:var(--purple); }
+  .step-header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .step-num { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1rem; color:white; flex-shrink:0; }
+  .s1 .step-num { background:var(--pink); }
+  .s2 .step-num { background:var(--yellow); color:#333; }
+  .s3 .step-num { background:var(--mint); }
+  .s4 .step-num { background:var(--sky); }
+  .s5 .step-num { background:var(--purple); }
+  .step-title { font-size:0.98rem; font-weight:900; line-height:1.4; flex:1; }
+  .done-badge { display:none; align-items:center; gap:4px; background:#E8FFF6; color:var(--mint); border-radius:999px; padding:3px 12px; font-size:0.78rem; font-weight:700; white-space:nowrap; }
+  .step.done .done-badge { display:flex; }
+  .lock-icon { position:absolute; top:14px; right:16px; font-size:1.2rem; }
+  .step:not(.locked) .lock-icon { display:none; }
+  .step-desc { font-size:0.86rem; color:#555; line-height:1.8; margin-bottom:14px; }
+  .note { display:inline-block; background:#FFF3CD; border-radius:8px; padding:3px 10px; font-size:0.78rem; color:#856404; margin-top:6px; font-weight:700; }
+  .warning { background:#FFF3CD; border:2px solid var(--yellow); border-radius:12px; padding:12px 16px; font-size:0.84rem; color:#7a5a00; line-height:1.7; margin-bottom:14px; }
+  .warning strong { font-weight:900; }
+  .prompt-wrap { background:#F8F9FA; border-radius:12px; border:1.5px solid #e8e8e8; overflow:hidden; margin-bottom:14px; }
+  .prompt-box { padding:14px 16px; font-size:0.76rem; line-height:1.8; color:#444; font-family:'M PLUS Rounded 1c',sans-serif; white-space:pre-wrap; max-height:200px; overflow-y:auto; word-break:break-all; }
+  .prompt-box::-webkit-scrollbar{width:5px} .prompt-box::-webkit-scrollbar-track{background:#f0f0f0} .prompt-box::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+  .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
+  .btn { display:flex; align-items:center; gap:6px; border:none; border-radius:10px; padding:10px 20px; font-size:0.88rem; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.2s, transform 0.1s; }
+  .btn:active{transform:scale(0.96)}
+  .btn-copy { background:var(--pink); color:white; }
+  .btn-copy:hover{background:#e0558d}
+  .btn-copy.sky{background:var(--sky)}
+  .btn-copy.sky:hover{background:#39b0a8}
+  .btn-copy.copied{background:var(--mint)}
+  .btn-next { background:linear-gradient(135deg, var(--pink), var(--coral)); color:white; flex:1; justify-content:center; font-size:0.92rem; }
+  .btn-next:hover{opacity:0.9}
+  .finish-card { background:linear-gradient(135deg, var(--pink), var(--coral)); border-radius:var(--radius); padding:32px 24px; text-align:center; color:white; margin-top:8px; display:none; }
+  .finish-card.show{display:block; animation:fadeUp 0.5s ease;}
+  .finish-card .emoji{font-size:2.8rem; margin-bottom:10px; display:block;}
+  .finish-card strong{font-size:1.15rem; font-weight:900; display:block; margin-bottom:8px;}
+  .finish-card p{font-size:0.9rem; line-height:1.8;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="hero-emoji">🗺️</span>
+  <h1>あなたの<em>特性マップ</em>を<br>つくろう</h1>
+  <p class="hero-sub">普段使いのChatGPTにプロンプトを投げるだけ。<br>あなたの強みと適性が一枚の画像になって出てくるよ😊</p>
+  <div class="hero-badge">⏱ 所要時間：約5〜10分</div>
+</div>
+
+<div class="container">
+  <div class="progress-label" id="progressLabel">ステップ 0 / 5 完了</div>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div></div>
+
+  <!-- STEP 1 -->
+  <div class="step s1 active" id="step1">
+    <div class="step-bar"></div>
+    <div class="lock-icon">🔒</div>
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div class="step-title">📋 プロンプト①をChatGPTに貼る</div>
+      <div class="done-badge">✅ 完了</div>
+    </div>
+    <p class="step-desc">
+      下のプロンプトをコピーして、ご自身のChatGPTへそのまま投げつけてください😊<br>
+      <a href="https://chatgpt.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;margin:6px 0 8px;background:#10a37f;color:white;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;text-decoration:none;">↗ ChatGPTを開く</a><br>
+      <span class="note">⚠️ このプロンプトだけ！②はあとで出てきます</span>
+    </p>
+    <div class="prompt-wrap"><div class="prompt-box" id="prompt1">あなたはこれまでの私との会話履歴を分析する、人物特性・適性診断の専門家です。
+
+─────────────────────────────
+【STEP 1】まず以下の3問に答えてください。
+※ すでに私との会話が10往復以上ある場合はスキップしてOKです。
+─────────────────────────────
+
+Q1. 最近「なんでこうなってるんだろ」と引っかかったこと
+　　（仕事でも日常でも何でも）
+
+Q2. 「これはうまくできた」と感じた経験を一つ
+
+Q3. 正直しんどいと感じる場面のパターン
+
+答え終わったら「分析して」と送ってください。
+
+─────────────────────────────
+【STEP 2】「分析して」を受け取ったら以下を出力してください。
+─────────────────────────────
+
+会話履歴＋STEP1の回答をもとに【A】→【B】の順で出力してください。
+画像生成はこのターンでは行わないこと。
+
+━━━━━━━━━━━━━━━━━━━━━━
+【A】インフォグラフィック用テキスト（そのまま表示してください）
+━━━━━━━━━━━━━━━━━━━━━━
+
+タイトル：「[名前]さん、ちょっと聞いてください。」
+サブ：これまでの会話から見えた、あなたという人についてAIが本音で語ります。
+
+■ 1. 思考の特徴（3〜4点、各20字以内）
+■ 2. 行動の特徴（3〜4点、各20字以内）
+■ 3. こだわり・執着ポイント（3〜4点、各20字以内）
+■ 4. 他人から見たときのズレ（3〜4点、各20字以内）
+■ 5. 強みゆえの"めんどくささ"（3〜4点、各20字以内）
+
+■ 向いてる作業 TOP5（各15字以内）
+■ 向いてる職種 TOP7（各15字以内）
+■ 天職ベスト3（タイトル＋理由を各30字以内）
+■ 向いていない環境（4〜6個、各15字以内）
+
+■ 最強チーム編成
+以下のタクソノミーから選ぶこと。リスト外の動物は使用禁止。
+
+【役割タクソノミー】
+カラス型→観察・構造化・仕組み化
+オオカミ型→戦略立案・チーム牽引
+フクロウ型→知識・検証・品質管理
+ビーバー型→実装・地道な実行・形にする
+イルカ型→調整・翻訳・場づくり
+チーター型→スピード・突破・推進
+犬型→現場伴走・信頼・サポート
+ハヤブサ型→探索・試作・素早い検証
+ライオン型→決断・統率・責任
+サル型→発想・遊び・ひらめき
+
+　私の役割：上記から1つ選択／一言説明（20字以内）
+　相性の良い仲間：上記から4体選択、各役割／15字以内の理由
+　相性注意：上記から2〜3体選択、各15字以内の理由
+
+■ 愛ある苦情（7〜10個）
+　タイトル：20字以内
+　本文：2文以内、ユーモアを込めて
+　ツッコミ：一言、読んだ本人が笑えるやつ
+
+■ 短い解説（80字以内）
+■ 総評（100字以内）
+■ キャッチコピー（20字以内）
+
+━━━━━━━━━━━━━━━━━━━━━━
+【B】管理者向けJSON（必ず```jsonで出力）
+━━━━━━━━━━━━━━━━━━━━━━
+
+以下のタグリストから5〜8個選ぶこと。リスト外のタグは作らないこと。
+
+【タグリスト】
+構造化思考／本質探究／自走力／改善志向／企画構成／
+AI活用／実装推進／こだわり強め／成果志向／
+スピード重視／丁寧さ重視／調整力／発信力／
+教える力／巻き込み力／慎重派／直感派／
+マルチタスク型／一点集中型／現場感覚／俯瞰視点
+
+{
+  "id": "",
+  "name": "",
+  "analyzed_at": "",
+  "catchcopy": "",
+  "role_type": "",
+  "tags": [],
+  "placement": {
+    "best_fit": "",
+    "team_role": "",
+    "needs_from_manager": "",
+    "avoid": ""
+  },
+  "compatibility": {
+    "good": [
+      {"type": "", "role": "", "reason": ""}
+    ],
+    "caution": [
+      {"type": "", "reason": ""}
+    ]
+  },
+  "complaints_summary": [],
+  "source_url": ""
+}
+
+━━━━━━━━━━━━━━━━━━━━━━
+【出力の注意事項】
+━━━━━━━━━━━━━━━━━━━━━━
+・このターンは【A】テキストと【B】JSONのみ出力してください。
+・画像生成はしないこと。「画像化して」と言われたら生成してください。
+・愛ある苦情は「本人が読んで笑えること」を最優先に。
+・これは評価ではなく「この人をどこで活かすか」のための分析です。
+・会話が少ない場合も、観察できた範囲で誠実に出力してください。</div></div>
+    <div class="btn-row">
+      <button class="btn btn-copy" id="copyBtn1" onclick="copyPrompt('prompt1','copyBtn1')">📋 プロンプト①をコピー</button>
+    </div>
+    <p class="step-desc" style="margin-top:14px; font-weight:700; color:#333;">貼ったあと、ChatGPTはどうなりましたか？</p>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn btn-next" style="font-size:0.82rem;" onclick="skipToStep(3)">🚀 自動で分析が始まった</button>
+      <button class="btn btn-next" style="font-size:0.82rem; background:linear-gradient(135deg,var(--yellow),var(--coral)); " onclick="nextStep(1)">💬 3問が出てきた</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step s2 locked" id="step2">
+    <div class="step-bar"></div>
+    <div class="lock-icon">🔒</div>
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div class="step-title">💬 3問に答えて「分析して」と送る</div>
+      <div class="done-badge">✅ 完了</div>
+    </div>
+    <p class="step-desc">
+      ChatGPTの3問に答えてください。<br>
+      答え終わったら「<strong>分析して</strong>」と送ってください。
+    </p>
+    <div class="btn-row">
+      <button class="btn btn-next" onclick="nextStep(2)">「分析して」と送った！→</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step s3 locked" id="step3">
+    <div class="step-bar"></div>
+    <div class="lock-icon">🔒</div>
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div class="step-title">⏳ 出力が終わるのを待つ</div>
+      <div class="done-badge">✅ 完了</div>
+    </div>
+    <p class="step-desc">
+      テキストとJSONが両方出てきたら次へ！<br>
+      JSONというなんかコードみたいのは無視してOKです✨<br>
+      <span class="note">📌 テキストとJSONが両方出たら次へ進んでください</span>
+    </p>
+    <div class="btn-row">
+      <button class="btn btn-next" onclick="nextStep(3)">両方出てきた！→</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step s4 locked" id="step4">
+    <div class="step-bar"></div>
+    <div class="lock-icon">🔒</div>
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div class="step-title">🎨 プロンプト②を同じチャットに貼る</div>
+      <div class="done-badge">✅ 完了</div>
+    </div>
+    <div class="warning">
+      <strong>⚠️ 大事なポイント！</strong><br>
+      新しいチャットは開かず、さっきの続きの同じチャットに貼ってください。
+    </div>
+    <p class="step-desc">
+      下のプロンプトをコピーして、同じチャットにそのまま貼って送ってください。<br>
+      インフォグラフィックが生成されてきます、眺めましょう✨
+    </p>
+    <div class="prompt-wrap"><div class="prompt-box" id="prompt2">上記【A】の内容をもとに、インフォグラフィック画像を生成してください。
+
+【画像生成の必須条件】
+・縦長レイアウト（スマホで読みやすい比率）
+・登場人物やマスコットのゆるいキャラクターイラストを必ず入れること
+・セクションごとに色の違うカラーブロックで明確に区切ること
+・吹き出し・ツッコミ・一言コメントを随所に散りばめること
+・文字は最小限。一目で「楽しそう」と思えるビジュアルを最優先
+・全体のトーン：ゆるくてポップ、でも情報はちゃんと伝わる
+・文字を詰め込まず、余白と絵で読ませること
+・テキストやJSONは出力しないこと。画像のみ。</div></div>
+    <div class="btn-row">
+      <button class="btn btn-copy sky" id="copyBtn2" onclick="copyPrompt('prompt2','copyBtn2')">📋 プロンプト②をコピー</button>
+      <button class="btn btn-next" onclick="nextStep(4)">画像が出てきた！→</button>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step s5 locked" id="step5">
+    <div class="step-bar"></div>
+    <div class="lock-icon">🔒</div>
+    <div class="step-header">
+      <div class="step-num">5</div>
+      <div class="step-title">🔗 管理者に公開リンクを送る</div>
+      <div class="done-badge">✅ 完了</div>
+    </div>
+    <p class="step-desc">
+      ChatGPTの「共有」から公開リンクをコピーして、管理者に共有くださいませ😊<br>
+      これだけで完了です！おつかれさまでした🎉
+    </p>
+    <div class="btn-row">
+      <button class="btn btn-next" onclick="nextStep(5)">送った！完了🎉</button>
+    </div>
+  </div>
+
+  <div class="finish-card" id="finishCard">
+    <span class="emoji">🎉</span>
+    <strong>おつかれさまでした！</strong>
+    <p>
+      公開リンクの共有ありがとうございます😊<br>
+      あとは管理者におまかせ！<br><br>
+      普段使うChatGPTにプロンプトを投げて、結果を共有する。<br>
+      それだけでワンチャン、みんなの視える化が進む、かも。。？✨
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function updateProgress(done) {
+    const pct = (done / 5) * 100;
+    const bar = document.getElementById('progressBar');
+    bar.style.width = pct + '%';
+    bar.setAttribute('aria-valuenow', pct);
+    document.getElementById('progressLabel').textContent = 'ステップ ' + done + ' / 5 完了';
+  }
+
+  function nextStep(step) {
+    document.getElementById('step' + step).classList.remove('active');
+    document.getElementById('step' + step).classList.add('done');
+    updateProgress(step);
+    const next = document.getElementById('step' + (step + 1));
+    if (next) {
+      next.classList.remove('locked');
+      next.classList.add('active');
+      setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    } else {
+      const fin = document.getElementById('finishCard');
+      fin.classList.add('show');
+      setTimeout(() => fin.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+  }
+
+  function skipToStep(target) {
+    for (let i = 1; i < target; i++) {
+      const s = document.getElementById('step' + i);
+      if (s) { s.classList.remove('active', 'locked'); s.classList.add('done'); }
+    }
+    updateProgress(target - 1);
+    const next = document.getElementById('step' + target);
+    if (next) {
+      next.classList.remove('locked');
+      next.classList.add('active');
+      setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+  }
+
+  function copyPrompt(id, btnId) {
+    const text = document.getElementById(id).innerText;
+    const btn = document.getElementById(btnId);
+    const orig = btn.innerHTML;
+
+    const showCopied = () => {
+      btn.innerHTML = '✅ コピーしました！';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showCopied).catch(() => fallbackCopy(text, showCopied));
+    } else {
+      fallbackCopy(text, showCopied);
+    }
+  }
+
+  function fallbackCopy(text, callback) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); callback(); } catch(e) { alert('コピーできませんでした。手動で選択してコピーしてください。'); }
+    document.body.removeChild(ta);
+  }
+
+  updateProgress(0);
+</script>
+</body>
+</html>
